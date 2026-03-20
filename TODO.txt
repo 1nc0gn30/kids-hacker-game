@@ -1,0 +1,128 @@
+KidGame3 TODO
+
+Project guardrails
+
+- Keep every scene grounded in real desktop/security behavior.
+- Keep the pressure believable: tense, noisy, and overwhelming, but not supernatural.
+- Use motion, layout, and UI feedback to sell intensity instead of fake fantasy text.
+- Let most key presses advance the scene naturally.
+- Reserve special key combinations for occasional milestone moments only.
+- Make the game readable for kids while still feeling credible to an adult.
+
+Progress snapshot
+
+- Finished so far: 55 tasks
+- Remaining: 19 tasks
+- Completed block: Scene 1 polish
+- Completed block: Input design
+- Current focus: Scene 3 build, Scene 2 action pass, and reusable structure
+
+Return checklist
+
+- Resume this Codex session with: `codex resume --last -C /home/neo/kidgame3`
+- If `--last` does not find it cleanly, use: `codex resume --all -C /home/neo/kidgame3`
+- First build target on return: implement Scene 3 from `SCENE03_DESIGN.md`
+- First polish target on return: make Scene 2 feel more active without showing gameplay telemetry
+- Keep `STORYLINE.md` as the canon reference before changing tone or story beats
+
+One-minute tasks
+
+Scene 1 polish
+
+- [x] Replace any remaining generic "localhost" labels with the Parrot-style machine identity.
+- [x] Add `0-9` key support to the input acceptance rules.
+- [x] Add support for `-` and `_` as accepted "tooling" keys.
+- [x] Add support for `/` as an accepted "path" key.
+- [x] Add support for `.` as an accepted "filename" key.
+- [x] Add support for `:` as an accepted "terminal" key.
+- [x] Show accepted key classes in the HUD text.
+- [x] Change the HUD copy so it says "keys" instead of only "letters".
+- [x] Add a small hint that not every scene will use a combo.
+- [x] Reduce any wording that sounds too cartoonish in the malware popup.
+- [x] Make the completion text say what the player actually finished.
+- [x] Add one more realistic terminal line to the intro buffer.
+- [x] Add one more realistic alert title for the live alert stack.
+- [x] Tighten one toast message so it sounds more like a real system notice.
+- [x] Add a subtle pulse to the top status meter when input is active.
+- [x] Add a subtle pulse to the dock icon highlight during stage changes.
+- [x] Make scanline intensity cap slightly lower so the effect stays believable.
+- [x] Increase malware popup jitter only during the final stage.
+- [x] Add a small cursor pause when the stage changes.
+- [x] Make the email subject line reveal a bit faster than the body text.
+
+Input design
+
+- [x] Create a single helper that decides whether a key press counts as gameplay input.
+- [x] Create a single helper that converts a valid key press into display text.
+- [x] Track the last non-modifier key pressed for HUD/debug use.
+- [x] Track how many number keys were used in the current scene.
+- [x] Track how many symbol keys were used in the current scene.
+- [x] Ignore modifier-only presses like `Shift` and `Ctrl`.
+- [x] Ignore movement keys that should not count in the current scene.
+- [x] Add a short list of "allowed extra keys" near the scene input logic.
+- [x] Add a comment describing why combos should stay occasional.
+- [x] Add a placeholder combo rule structure for future scenes.
+- [x] Add a HUD slot for combo prompts that can stay empty by default.
+- [x] Add one fake-but-believable combo prompt string for future use.
+
+Scene 2 scaffold
+
+- [x] Create `scene02_*.py` with an empty scene class.
+- [x] Give Scene 2 a clear name string.
+- [x] Add `is_complete` to the Scene 2 scaffold.
+- [x] Add `handle_event()` to the Scene 2 scaffold.
+- [x] Add `update()` to the Scene 2 scaffold.
+- [x] Add `render()` to the Scene 2 scaffold.
+- [x] Render a background color for Scene 2.
+- [x] Render a title label for Scene 2.
+- [x] Render a one-line status label for Scene 2.
+- [x] Wire Scene 2 into `game/sections/section1/__init__.py`.
+- [x] Make Scene 2 start after Scene 1 completes.
+- [x] Change the main completion banner so it only appears after the final built scene.
+
+Scene 2 realism ideas
+
+- [x] Pick one real tool surface for Scene 2: logs, packet capture, or mail triage.
+- [x] Add one realistic window title for the chosen Scene 2 tool.
+- [x] Add one realistic footer/status bar label for the Scene 2 tool.
+- [x] Add one realistic warning line that a kid can still understand.
+- [x] Add one motion cue for "system under load" without flashing too hard.
+- [x] Add one subtle panel shadow so the window feels physical.
+- [x] Add one small ambient animation that responds to typing speed.
+
+Reusable structure
+
+- [ ] Create a tiny base scene docstring file or note describing the common API.
+- [ ] List shared scene fields used by Scene 1.
+- [ ] List shared scene methods used by Scene 1.
+- [ ] Extract one repeated text-blit helper only if it reduces duplication cleanly.
+- [ ] Extract one repeated toast/alert helper only if it stays simple.
+- [ ] Keep Scene 1 behavior unchanged after any helper extraction.
+
+Animation and feel
+
+- [ ] Pick one animation principle for the project: lag, shake, pulse, or reveal.
+- [ ] Add one note about where that animation should be used sparingly.
+- [ ] Add one note about where that animation should never be used.
+- [ ] Add one "calm frame" moment between high-intensity beats.
+- [ ] Add one subtle easing tweak to cursor movement.
+- [ ] Add one subtle easing tweak to popup arrival.
+- [ ] Add one visual cue that typing faster increases scene pressure.
+
+Realism review
+
+- [ ] Remove one line of text that feels too fake or too gamey.
+- [ ] Replace one line with terminology an adult would recognize.
+- [ ] Check one UI label against what a real desktop app would say.
+- [ ] Check one terminal command for basic plausibility.
+- [ ] Check one alert title for tone consistency.
+- [ ] Check one scene color choice so it stays grounded.
+
+Verification
+
+- [x] Run `python3 -m py_compile main.py game/**/*.py`.
+- [x] Add one tiny smoke-test note describing how to verify Scene 1 manually.
+  Scene 1 smoke test: launch the game, type through the desktop/email/malware sequence, confirm no typed-key telemetry is visible, and confirm the transition into Scene 2 starts automatically.
+- [x] Add one tiny smoke-test note describing how to verify Scene 2 manually.
+  Scene 2 smoke test: continue typing after the transition, confirm packet rows and the right-side activity feel live, and confirm no visible key-count or WPM-style counters appear on screen.
+- [x] Update `README.md` after any new scene is wired in.
