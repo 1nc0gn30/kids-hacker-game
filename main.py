@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 import pygame
 
 from game.sections import load_section
@@ -6,6 +9,10 @@ WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
 FPS = 60
 SCENE_TRANSITION_DURATION = 1.0
+
+
+def launch_scene2_3d() -> None:
+    subprocess.run([sys.executable, '-m', 'game.sections.section1.scene02_loopback_3d'], check=False)
 
 
 def draw_completion_banner(surface: pygame.Surface, font: pygame.font.Font) -> None:
@@ -133,6 +140,11 @@ def main() -> None:
             continue
 
         active_scene.update(delta_seconds)
+
+        if active_scene.is_complete and scene_index == 0 and len(scenes) > 1:
+            pygame.quit()
+            launch_scene2_3d()
+            return
 
         if active_scene.is_complete and scene_index < len(scenes) - 1:
             transition_from_index = scene_index

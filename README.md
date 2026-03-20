@@ -5,7 +5,7 @@ Section/scene-structured Python + Pygame story game.
 Current build includes:
 - Section 1
 - Scene 1 (`Parrot OS desktop -> email alert -> opened warning email -> malware popup`)
-- Scene 2 (`loopback packet capture review`)
+- Scene 2 (`loopback tunnel raid` rendered with Ursina 3D)
 
 ## Run
 
@@ -18,7 +18,7 @@ python3 -m venv .venv
 ## Controls
 
 - Scene 1 still rewards fast typing, but each beat also has a highlighted keyword objective (`SCAN`, `OPEN`, `TRACE`, `ISOLATE`).
-- Scene 2 now uses guided packet-triage prompts: choose filters with number keys, type investigation words like `MIRROR`, and make response choices such as `Q` for quarantine.
+- Scene 2 now launches a 3D Ursina tunnel raid where you fly a drone with `WASD` or arrow keys and trigger objectives with `2`, `E`, `Q`, and `R`.
 - Press `Esc` to quit.
 
 ## Status
