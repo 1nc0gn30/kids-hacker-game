@@ -33,17 +33,32 @@ class Section1Scene1DesktopBreach:
     def __init__(self) -> None:
         self.stage = 0
         self.stage_key_count = 0
-        self.keys_needed = 30
+        self.stage_key_targets = [18, 22, 26, 24]
         self.is_complete = False
 
         self.total_letter_keys = 0
         self.raw_key_stream = ""
         self.raw_key_stream_max = 56
+        self.typed_history = deque(maxlen=18)
         self.last_gameplay_key = ""
         self.number_key_count = 0
         self.symbol_key_count = 0
-
+        self.perfect_hits = 0
+        self.threat_level = 18.0
+        self.threat_pulse = 0.0
+        self.objective_flash_timer = 0.0
+        self.stage_completion_banner = ""
+        self.background_phase = 0.0
         self.rng = random.Random(401)
+        self.data_shards = [
+            {
+                "x": self.rng.uniform(140, 1180),
+                "y": self.rng.uniform(90, 680),
+                "speed": self.rng.uniform(18, 44),
+                "size": self.rng.randint(2, 5),
+            }
+            for _ in range(42)
+        ]
 
         self.button_flash_timer = 0.0
         self.button_flash_duration = 0.24
@@ -171,6 +186,33 @@ class Section1Scene1DesktopBreach:
             "Email opened",
             "Malware popup",
         ]
+        self.stage_objectives = [
+            {
+                "token": "scan",
+                "label": "Run a quick sweep",
+                "hint": "Type SCAN anywhere to accelerate the desktop investigation.",
+                "reward": "Recon pipeline boosted.",
+            },
+            {
+                "token": "open",
+                "label": "Open the urgent message",
+                "hint": "Type OPEN to crack the inbox alert before it mutates.",
+                "reward": "Alert window forced open.",
+            },
+            {
+                "token": "trace",
+                "label": "Trace the relay route",
+                "hint": "Type TRACE to decode the sender path hidden in the email body.",
+                "reward": "Relay route exposed.",
+            },
+            {
+                "token": "isolate",
+                "label": "Isolate the malware",
+                "hint": "Type ISOLATE to lock the breach and finish the scene.",
+                "reward": "Containment routine accepted.",
+            },
+        ]
+        self.objective_completed = [False, False, False, False]
 
         self.script_channels = {
             "decoded": {
@@ -220,18 +262,9 @@ class Section1Scene1DesktopBreach:
 
         self._register_gameplay_press(key_char)
         self.stage_key_count += 1
-        if self.stage_key_count >= self.keys_needed:
-            self.stage_key_count = 0
-            if self.stage < 3:
-                self.stage += 1
-                self.stage_flash_timer = 1.0
-                self.cursor_pause_timer = 0.12
-                self._push_toast(f"state transition: {self.stage_names[self.stage]}")
-                self._push_live_alert("Stage Update", f"Scene escalated to {self.stage_names[self.stage]}")
-                self._retarget_cursor("stage_change")
-            else:
-                self.is_complete = True
-                self._push_toast("Scene 1 complete -> syncing loopback capture")
+        self._check_stage_objective()
+        if self.stage_key_count >= self.stage_key_targets[self.stage]:
+            self._advance_stage()
 
     def update(self, delta_seconds: float) -> None:
         self.button_flash_timer = max(0.0, self.button_flash_timer - delta_seconds)
@@ -241,6 +274,15 @@ class Section1Scene1DesktopBreach:
         self.cursor_click_timer = max(0.0, self.cursor_click_timer - delta_seconds * 3.8)
         self.cursor_pause_timer = max(0.0, self.cursor_pause_timer - delta_seconds)
         self.stage_flash_timer = max(0.0, self.stage_flash_timer - delta_seconds * 1.2)
+        self.objective_flash_timer = max(0.0, self.objective_flash_timer - delta_seconds * 1.1)
+        self.threat_pulse = max(0.0, self.threat_pulse - delta_seconds * 1.8)
+        self.background_phase += delta_seconds * (0.45 + self.input_activity * 1.6)
+        self.threat_level = min(100.0, max(8.0, self.threat_level - delta_seconds * 3.0 + self.stage * 2.1))
+        for shard in self.data_shards:
+            shard["y"] += delta_seconds * shard["speed"] * (1.0 + self.input_activity * 1.8)
+            if shard["y"] > 760:
+                shard["y"] = -20
+                shard["x"] = self.rng.uniform(120, 1200)
 
         active_toasts = []
         for toast in self.toast_events:
@@ -336,9 +378,12 @@ class Section1Scene1DesktopBreach:
         self.raw_key_stream += key_char
         if len(self.raw_key_stream) > self.raw_key_stream_max:
             self.raw_key_stream = self.raw_key_stream[-self.raw_key_stream_max :]
+        self.typed_history.append(key_char)
 
         self.reveal_momentum = min(17.0, self.reveal_momentum + 1.0 * speed_factor)
         self.reveal_budget += 0.8 + 0.6 * speed_factor
+        self.threat_level = min(100.0, self.threat_level + 1.3 + self.stage * 0.7)
+        self.threat_pulse = 1.0
 
         if self.total_letter_keys % 6 == 0:
             event_messages = [
@@ -351,6 +396,43 @@ class Section1Scene1DesktopBreach:
             self._push_toast(f"{event_messages[message_index]} ({int(self.typing_wpm)} wpm)")
             if self.total_letter_keys % 12 == 0:
                 self._push_live_alert("Input Signal", event_messages[message_index])
+
+    def _check_stage_objective(self) -> None:
+        if self.objective_completed[self.stage]:
+            return
+        objective = self.stage_objectives[self.stage]
+        if objective["token"] not in self.raw_key_stream:
+            return
+
+        self.objective_completed[self.stage] = True
+        self.perfect_hits += 1
+        self.objective_flash_timer = 1.0
+        self.stage_completion_banner = objective["reward"]
+        self.stage_key_count = min(
+            self.stage_key_targets[self.stage],
+            self.stage_key_count + max(6, self.stage_key_targets[self.stage] // 2),
+        )
+        self.reveal_budget += 12
+        self.reveal_momentum = min(18.0, self.reveal_momentum + 3.5)
+        self._push_toast(f"objective complete: {objective['label'].lower()}")
+        self._push_live_alert("Directive Cleared", objective["reward"])
+        self._retarget_cursor("stage_change")
+
+    def _advance_stage(self) -> None:
+        self.stage_key_count = 0
+        self.raw_key_stream = ""
+        if self.stage < 3:
+            self.stage += 1
+            self.stage_flash_timer = 1.0
+            self.cursor_pause_timer = 0.12
+            self.stage_completion_banner = self.stage_objectives[self.stage - 1]["reward"]
+            self._push_toast(f"state transition: {self.stage_names[self.stage]}")
+            self._push_live_alert("Stage Update", f"Scene escalated to {self.stage_names[self.stage]}")
+            self._retarget_cursor("stage_change")
+        else:
+            self.is_complete = True
+            self.stage_completion_banner = self.stage_objectives[self.stage]["reward"]
+            self._push_toast("Scene 1 complete -> syncing loopback capture")
 
     def _compute_instant_wpm(self) -> float:
         if len(self.key_times) < 2:
@@ -635,6 +717,12 @@ class Section1Scene1DesktopBreach:
         width, height = surface.get_size()
 
         surface.fill((34, 73, 104))
+        for shard in self.data_shards:
+            alpha = 40 + int(self.input_activity * 90)
+            color = (113, 190, 244, alpha)
+            glow = pygame.Surface((20, 20), pygame.SRCALPHA)
+            pygame.draw.circle(glow, color, (10, 10), shard["size"])
+            surface.blit(glow, (shard["x"], shard["y"]))
         pygame.draw.rect(surface, (23, 44, 72), (0, 0, width, height // 2))
         pygame.draw.circle(surface, (44, 93, 133), (width - 120, 120), 250)
         pygame.draw.circle(surface, (18, 39, 61), (220, height - 100), 340)
@@ -651,6 +739,13 @@ class Section1Scene1DesktopBreach:
         pygame.draw.line(surface, (53, 66, 79), (0, 41), (width, 41), 1)
         self._blit_text(surface, self.small_font, "Activities", (16, 12), (222, 228, 235))
         self._blit_text(surface, self.small_font, self._clock_label(), (width // 2 - 38, 12), (222, 228, 235))
+        threat_text = "LOW"
+        if self.threat_level >= 40:
+            threat_text = "MED"
+        if self.threat_level >= 70:
+            threat_text = "HIGH"
+        if self.stage >= 3 and self.threat_level >= 85:
+            threat_text = "CRITICAL"
 
         net_label = "net secure"
         if self.stage >= 1:
@@ -661,8 +756,8 @@ class Section1Scene1DesktopBreach:
         self._blit_text(
             surface,
             self.small_font,
-            f"{net_label}   bat 62%   notif {alert_count}",
-            (width - 270, 12),
+            f"{net_label}   threat {threat_text}   notif {alert_count}",
+            (width - 308, 12),
             (199, 215, 224),
         )
 
@@ -763,6 +858,100 @@ class Section1Scene1DesktopBreach:
             pygame.Rect(panel.x + 16, panel.y + 194, panel.w - 32, 40),
             (198, 216, 232),
             max_lines=2,
+            )
+
+        mission_panel = pygame.Rect(748, 368, 426, 252)
+        pygame.draw.rect(surface, (14, 20, 28), mission_panel, border_radius=10)
+        pygame.draw.rect(surface, (82, 122, 164), mission_panel, 1, border_radius=10)
+        self._blit_text(surface, self.small_font, "Incident Director", (mission_panel.x + 16, mission_panel.y + 14), (235, 242, 250))
+
+        objective = self.stage_objectives[self.stage]
+        objective_done = self.objective_completed[self.stage]
+        progress_ratio = self.stage_key_count / self.stage_key_targets[self.stage]
+        fill_color = (86, 182, 126) if objective_done else (94, 168, 228)
+        self._blit_text(surface, self.subhead_font, objective["label"], (mission_panel.x + 16, mission_panel.y + 42), (231, 238, 246))
+        self._blit_wrapped_text(
+            surface,
+            self.small_font,
+            objective["hint"],
+            pygame.Rect(mission_panel.x + 16, mission_panel.y + 78, mission_panel.w - 32, 56),
+            (177, 198, 219),
+            max_lines=3,
+        )
+        bar_bg = pygame.Rect(mission_panel.x + 16, mission_panel.y + 146, mission_panel.w - 32, 16)
+        pygame.draw.rect(surface, (33, 45, 57), bar_bg, border_radius=8)
+        pygame.draw.rect(surface, fill_color, (bar_bg.x, bar_bg.y, int(bar_bg.w * progress_ratio), bar_bg.h), border_radius=8)
+        self._blit_text(
+            surface,
+            self.small_font,
+            f"Scene progress {self.stage_key_count}/{self.stage_key_targets[self.stage]}",
+            (mission_panel.x + 16, mission_panel.y + 172),
+            (216, 227, 239),
+        )
+        typed_preview = "".join(self.typed_history).upper() or "..."
+        self._blit_text(
+            surface,
+            self.tiny_font,
+            f"live input> {typed_preview[-16:]}",
+            (mission_panel.x + 16, mission_panel.y + 198),
+            (147, 190, 228),
+        )
+        status_text = self.stage_completion_banner if self.stage_completion_banner else "Maintain pressure to keep the trace alive."
+        self._blit_wrapped_text(
+            surface,
+            self.small_font,
+            status_text,
+            pygame.Rect(mission_panel.x + 16, mission_panel.y + 216, mission_panel.w - 32, 28),
+            (198, 220, 236),
+            max_lines=2,
+        )
+
+        tracker = pygame.Rect(122, 486, 610, 132)
+        pygame.draw.rect(surface, (14, 19, 26), tracker, border_radius=10)
+        pygame.draw.rect(surface, (66, 93, 118), tracker, 1, border_radius=10)
+        self._blit_text(surface, self.small_font, "Breach Timeline", (tracker.x + 16, tracker.y + 12), (231, 238, 244))
+        labels = ["DESKTOP", "ALERT", "EMAIL", "MALWARE"]
+        for index, label in enumerate(labels):
+            node_x = tracker.x + 56 + index * 164
+            node_y = tracker.y + 62
+            completed = index < self.stage or (index == self.stage and self.objective_completed[self.stage])
+            active = index == self.stage
+            line_color = (76, 125, 166) if index < 3 else (113, 63, 72)
+            if index < len(labels) - 1:
+                pygame.draw.line(surface, line_color, (node_x + 24, node_y), (node_x + 140, node_y), 4)
+            node_color = (87, 189, 126) if completed else (90, 116, 145)
+            if active:
+                pulse = int(35 * (0.5 + 0.5 * math.sin(self.background_phase * 5.0)))
+                node_color = (110 + pulse, 184 + pulse // 2, min(255, 226 + pulse // 3))
+            pygame.draw.circle(surface, node_color, (node_x, node_y), 22)
+            pygame.draw.circle(surface, (17, 24, 31), (node_x, node_y), 10)
+            self._blit_text(surface, self.tiny_font, label, (node_x - 28, node_y + 30), (204, 219, 233))
+
+        threat_panel = pygame.Rect(122, 634, 1052, 58)
+        pygame.draw.rect(surface, (10, 15, 21), threat_panel, border_radius=10)
+        pygame.draw.rect(surface, (66, 88, 112), threat_panel, 1, border_radius=10)
+        pulse = 0.5 + 0.5 * math.sin(self.background_phase * 8.0)
+        threat_color = (
+            int(74 + self.threat_level * 1.4),
+            int(106 + max(0.0, 60 - self.threat_level * 0.4)),
+            int(120 - min(52, self.threat_level * 0.5)),
+        )
+        threat_fill = pygame.Rect(threat_panel.x + 18, threat_panel.y + 24, int((threat_panel.w - 36) * (self.threat_level / 100.0)), 12)
+        pygame.draw.rect(surface, (36, 48, 60), (threat_panel.x + 18, threat_panel.y + 24, threat_panel.w - 36, 12), border_radius=6)
+        pygame.draw.rect(surface, threat_color, threat_fill, border_radius=6)
+        if self.threat_pulse > 0:
+            pygame.draw.rect(
+                surface,
+                (255, 220, 180),
+                (threat_fill.right - 12, threat_fill.y, 12 + int(18 * pulse), threat_fill.h),
+                border_radius=6,
+            )
+        self._blit_text(
+            surface,
+            self.small_font,
+            f"Threat pressure {int(self.threat_level)}%  |  objectives cleared {self.perfect_hits}/4  |  type {objective['token'].upper()} now",
+            (threat_panel.x + 18, threat_panel.y + 7),
+            (224, 233, 243),
         )
 
         if self.stage >= 1:
