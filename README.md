@@ -17,8 +17,8 @@ python3 -m venv .venv
 
 ## Controls
 
-- Press letter keys `a-z` to advance the scene.
-- Every 30 letter key presses triggers the next beat.
+- Scene 1 still rewards fast typing, but each beat also has a highlighted keyword objective (`SCAN`, `OPEN`, `TRACE`, `ISOLATE`).
+- Scene 2 now uses guided packet-triage prompts: choose filters with number keys, type investigation words like `MIRROR`, and make response choices such as `Q` for quarantine.
 - Press `Esc` to quit.
 
 ## Status
